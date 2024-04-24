@@ -3,17 +3,16 @@ package org.scaler.productservice.service;
 import org.scaler.productservice.dtos.CategoryResponseDto;
 import org.scaler.productservice.dtos.FakeStoreProductDto;
 import org.scaler.productservice.models.Product;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.context.annotation.Primary;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RequestCallback;
-import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Primary
 public class FakeStoreProductService implements Productservice {
     private final RestTemplate restTemplate;
 
@@ -63,18 +62,22 @@ public class FakeStoreProductService implements Productservice {
     @Override
     public Product deleteProduct(Long id) {
 
-        RequestCallback requestCallback = restTemplate.acceptHeaderRequestCallback(FakeStoreProductDto.class);
-        ResponseExtractor<ResponseEntity<FakeStoreProductDto>> responseExtractor =
-                restTemplate.responseEntityExtractor(FakeStoreProductDto.class);
-        ResponseEntity<FakeStoreProductDto> response = restTemplate.execute(
-                "https://fakestoreapi.com/products/{id}", HttpMethod.DELETE, requestCallback, responseExtractor, id);
+        HttpHeaders headers = new HttpHeaders();
+        HttpEntity<?> requestEntity = new HttpEntity<>(headers);
+
+          ResponseEntity<FakeStoreProductDto> response = restTemplate.exchange(
+                  "https://fakestoreapi.com/products/{id}", HttpMethod.DELETE,requestEntity,
+                  FakeStoreProductDto.class,id);
+
         return response.getBody().toProduct();
     }
 
     @Override
     public List<CategoryResponseDto> getAllCategory() {
-        String[] stringResponse = restTemplate.getForObject("https://fakestoreapi.com/products/categories",
-                String[].class);
+        String[] stringResponse = restTemplate.getForObject(
+                "https://fakestoreapi.com/products/categories",
+                String[].class
+        );
 
         List<CategoryResponseDto> response = new ArrayList<>();
         for (String category : stringResponse) {
@@ -94,10 +97,17 @@ public class FakeStoreProductService implements Productservice {
         fakeStoreProductDto.setImage(image);
         fakeStoreProductDto.setCategory(category);
 
-        RequestCallback requestCallback = restTemplate.httpEntityCallback(fakeStoreProductDto, FakeStoreProductDto.class);
-        ResponseExtractor<ResponseEntity<FakeStoreProductDto>> responseExtractor = restTemplate.responseEntityExtractor(FakeStoreProductDto.class);
-        ResponseEntity<FakeStoreProductDto> response = restTemplate.execute(
-                "https://fakestoreapi.com/products/{id}", HttpMethod.PUT, requestCallback, responseExtractor, id);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<FakeStoreProductDto> requestEntity = new HttpEntity<>(fakeStoreProductDto,headers);
+
+        ResponseEntity<FakeStoreProductDto> response = restTemplate.exchange(
+                "https://fakestoreapi.com/products/{id}",
+                HttpMethod.PUT,
+                requestEntity,
+                FakeStoreProductDto.class,
+                id
+        );
 
         return response.getBody().toProduct();
     }
@@ -114,6 +124,8 @@ public class FakeStoreProductService implements Productservice {
         }
         return product;
     }
+
+
 
 
 }
