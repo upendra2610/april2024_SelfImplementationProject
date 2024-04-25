@@ -43,10 +43,6 @@ public class ProductController {
         return productService.deleteProduct(id);
     }
 
-    @GetMapping("/products/categories")
-    public String[] getAllCategory(){
-        return productService.getAllCategory();
-    }
 
     @PutMapping("/products/{id}")
     public Product updateProduct(@PathVariable("id") Long id, @RequestBody CreateProductRequestDto productRequestDto){
@@ -58,8 +54,4 @@ public class ProductController {
                 productRequestDto.getCategory());
     }
 
-    @GetMapping("/products/category/{title}")
-    public List<Product> getAllProductByCategory(@PathVariable("title") String title){
-        return productService.getAllProductByCategory(title);
-    }
 }
