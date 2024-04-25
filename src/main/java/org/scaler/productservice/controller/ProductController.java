@@ -1,6 +1,5 @@
 package org.scaler.productservice.controller;
 
-import org.scaler.productservice.dtos.CategoryResponseDto;
 import org.scaler.productservice.dtos.CreateProductRequestDto;
 import org.scaler.productservice.models.Product;
 import org.scaler.productservice.service.Productservice;
@@ -45,7 +44,7 @@ public class ProductController {
     }
 
     @GetMapping("/products/categories")
-    public List<CategoryResponseDto> getAllCategory(){
+    public String[] getAllCategory(){
         return productService.getAllCategory();
     }
 
