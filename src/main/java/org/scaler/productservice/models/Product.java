@@ -1,5 +1,6 @@
 package org.scaler.productservice.models;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 import lombok.Getter;
@@ -13,6 +14,6 @@ public class Product extends BaseModel{
     private double price;
     private String description;
     private String image;
-    @ManyToOne
+    @ManyToOne(cascade = {CascadeType.PERSIST})
     private Category category;
 }

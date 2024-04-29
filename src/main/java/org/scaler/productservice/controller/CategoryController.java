@@ -18,7 +18,7 @@ public class CategoryController {
         this.productService = productService;
     }
 
-    @GetMapping
+    @GetMapping()
     public String[] getAllCategory(){
         return productService.getAllCategory();
     }
