@@ -10,13 +10,12 @@ public interface Productservice {
 
     List<Product> getAllProduct();
 
-    Product createProduct(String title, double price, String description,
+    Product createProduct(String title, Double price, String description,
                                  String image, String category);
     Product deleteProduct(Long id);
 
-    String[] getAllCategory();
 
-    Product updateProduct(Long id, String title, double price, String description,
+    Product updateProduct(Long id, String title, Double price, String description,
                                  String image, String category);
 
     List<Product> getAllProductByCategory(String title);

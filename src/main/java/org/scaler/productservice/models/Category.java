@@ -15,7 +15,7 @@ import java.util.List;
 public class Category extends BaseModel{
     private String title;
 
-    @OneToMany(mappedBy = "category" , cascade = {CascadeType.REMOVE}) //here we need to tell this otherwise orm creates mapping table
+    @OneToMany(mappedBy = "category" , cascade = {CascadeType.REMOVE}) //here we need to tell this(mappedBy) otherwise orm creates mapping table
     @JsonIgnore //when we hit the getSingleProductbyId then this will infinite call recursively to avoid this we need this annotation
     private List<Product> products;
 }

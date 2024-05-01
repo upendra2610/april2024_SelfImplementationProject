@@ -10,7 +10,7 @@ import org.scaler.productservice.models.Product;
 public class FakeStoreProductDto {
     private Long id;
     private String title;
-    private double price;
+    private Double price;
     private String description;
     private String image;
     private String category;

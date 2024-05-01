@@ -1,8 +1,8 @@
-package org.scaler.productservice.service;
+package org.scaler.productservice.service.thirdParty;
 
 import org.scaler.productservice.dtos.FakeStoreProductDto;
 import org.scaler.productservice.models.Product;
-import org.springframework.context.annotation.Primary;
+import org.scaler.productservice.service.Productservice;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -10,7 +10,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
+@Service("fakestoreProductService")
 public class FakeStoreProductService implements Productservice {
     private final RestTemplate restTemplate;
 
@@ -41,7 +41,7 @@ public class FakeStoreProductService implements Productservice {
     }
 
     @Override
-    public Product createProduct(String title, double price, String description, String image, String category) {
+    public Product createProduct(String title, Double price, String description, String image, String category) {
         FakeStoreProductDto fakeStoreProductDto = new FakeStoreProductDto();
         fakeStoreProductDto.setTitle(title);
         fakeStoreProductDto.setPrice(price);
@@ -70,17 +70,9 @@ public class FakeStoreProductService implements Productservice {
         return response.getBody().toProduct();
     }
 
-    @Override
-    public String[] getAllCategory() {
-        String[] stringResponse = restTemplate.getForObject(
-                "https://fakestoreapi.com/products/categories",
-                String[].class
-        );
-        return stringResponse;
-    }
 
     @Override
-    public Product updateProduct(Long id, String title, double price, String description, String image, String category) {
+    public Product updateProduct(Long id, String title, Double price, String description, String image, String category) {
         FakeStoreProductDto fakeStoreProductDto = new FakeStoreProductDto();
         fakeStoreProductDto.setTitle(title);
         fakeStoreProductDto.setPrice(price);
