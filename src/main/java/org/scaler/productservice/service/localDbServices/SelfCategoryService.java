@@ -1,5 +1,6 @@
 package org.scaler.productservice.service.localDbServices;
 
+import org.scaler.productservice.exceptions.NotFoundException;
 import org.scaler.productservice.models.Category;
 import org.scaler.productservice.repository.CategoryRepository;
 import org.scaler.productservice.service.CategoryService;
@@ -16,15 +17,17 @@ public class SelfCategoryService implements CategoryService {
     }
 
     @Override
-    public String[] getAllCategory() {
+    public String[] getAllCategory() throws NotFoundException {
         List<Category> response = categoryRepository.findAll();
-        String[] categories = new String[response.size()];
-        int i = 0;
-        for (Category category : response) {
-            categories[i++] = category.getTitle();
+        if (!response.isEmpty()) {
+            String[] categories = new String[response.size()];
+            int i = 0;
+            for (Category category : response) {
+                categories[i++] = category.getTitle();
+            }
+            return categories;
         }
-
-        return categories;
+        throw new NotFoundException("There is no categories");
     }
 
 }

@@ -1,9 +1,12 @@
 package org.scaler.productservice.controller;
 
 import org.scaler.productservice.dtos.CreateProductRequestDto;
+import org.scaler.productservice.exceptions.NotFoundException;
 import org.scaler.productservice.models.Product;
 import org.scaler.productservice.service.Productservice;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,13 +22,13 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public Product getProductById(@PathVariable("id") Long id){
-        return productService.getProductById(id);
+    public ResponseEntity<Product> getProductById(@PathVariable("id") Long id) throws NotFoundException {
+        return new ResponseEntity<>(productService.getProductById(id), HttpStatus.OK);
     }
 
     @GetMapping()
-    public List<Product> getAllProduct(){
-        return productService.getAllProduct();
+    public ResponseEntity<List<Product>> getAllProduct() throws NotFoundException {
+        return new ResponseEntity<>(productService.getAllProduct(), HttpStatus.OK);
     }
 
     @PostMapping()
@@ -40,25 +43,26 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
-    public Product deleteProduct(@PathVariable("id") Long id){
+    public ResponseEntity<Product> deleteProduct(@PathVariable("id") Long id) throws NotFoundException {
 
-        return productService.deleteProduct(id);
+        return new ResponseEntity<>(productService.deleteProduct(id), HttpStatus.NO_CONTENT);
     }
 
 
     @PutMapping("/{id}")
-    public Product updateProduct(@PathVariable("id") Long id, @RequestBody CreateProductRequestDto productRequestDto){
-        return productService.updateProduct(id,
+    public ResponseEntity<Product> updateProduct(@PathVariable("id") Long id, @RequestBody CreateProductRequestDto productRequestDto) throws NotFoundException {
+        return new ResponseEntity<>(productService.updateProduct(id,
                 productRequestDto.getTitle(),
                 productRequestDto.getPrice(),
                 productRequestDto.getDescription(),
                 productRequestDto.getImage(),
-                productRequestDto.getCategory());
+                productRequestDto.getCategory()), HttpStatus.OK);
     }
 
     @GetMapping("/categories/{title}")
-    public List<Product> getAllProductByCategory(@PathVariable("title") String title){
-        return productService.getAllProductByCategory(title);
+    public ResponseEntity<List<Product>> getAllProductByCategory(@PathVariable("title") String title) throws NotFoundException {
+        return new ResponseEntity<>(productService.getAllProductByCategory(title),
+                HttpStatus.OK);
     }
 
 }
