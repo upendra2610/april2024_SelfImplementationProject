@@ -1,7 +1,11 @@
 package org.scaler.productservice.repository;
 
+
 import org.scaler.productservice.models.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -17,4 +21,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     void deleteById(Long id);
 
     List<Product> findByCategoryTitle(String title);
+
+    Page<Product> findByTitleContaining(String title, Pageable pageable);
 }
