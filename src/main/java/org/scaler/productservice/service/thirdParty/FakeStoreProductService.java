@@ -28,7 +28,7 @@ public class FakeStoreProductService implements Productservice {
         //checking in cache memory
         FakeStoreProductDto fakeStoreProductFromCache = redisTemplate.opsForValue().get(id);
         //for cache hit
-        if(fakeStoreProductFromCache != null){
+        if (fakeStoreProductFromCache != null) {
             return fakeStoreProductFromCache.toProduct();
         }
 
@@ -38,8 +38,8 @@ public class FakeStoreProductService implements Productservice {
                 org.scaler.productservice.dtos.FakeStoreProductDto.class
         );
         //Handling Exception
-        if(fakeStoreProductDto == null) {
-            throw new NotFoundException("Product with id:"+id+" not exist");
+        if (fakeStoreProductDto == null) {
+            throw new NotFoundException("Product with id:" + id + " not exist");
         }
 
         redisTemplate.opsForValue().set(id, fakeStoreProductDto);
@@ -55,8 +55,8 @@ public class FakeStoreProductService implements Productservice {
                 FakeStoreProductDto[].class
         );
         //Handling Exception
-        if(response == null){
-            throw  new NotFoundException("Product Not Exist");
+        if (response == null) {
+            throw new NotFoundException("Product Not Exist");
         }
 
 
@@ -87,13 +87,14 @@ public class FakeStoreProductService implements Productservice {
     @Override
     public Product deleteProduct(Long id) throws NotFoundException {
 
+        //checking if product with id exist or not
         FakeStoreProductDto fakeStoreProductDto = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/" + id,
                 org.scaler.productservice.dtos.FakeStoreProductDto.class
         );
         //Handling exception
-        if(fakeStoreProductDto == null){
-            throw new NotFoundException("Product with id:"+id+" not exist");
+        if (fakeStoreProductDto == null) {
+            throw new NotFoundException("Product with id:" + id + " not exist");
         }
 
         //If response is not null(main logic)
@@ -104,35 +105,57 @@ public class FakeStoreProductService implements Productservice {
                 "https://fakestoreapi.com/products/{id}", HttpMethod.DELETE, requestEntity,
                 FakeStoreProductDto.class, id);
 
+        //deleting in cache
+        FakeStoreProductDto productFromCache = redisTemplate.opsForValue().get(id);
+        if(productFromCache != null){
+            redisTemplate.delete(id);
+        }
+
         return response.getBody().toProduct();
     }
 
 
     @Override
-    public Product updateProduct(Long id, String title, Double price, String description, String image, String category) throws NotFoundException {
+    public Product updateProduct(Long id, String title, Double price, String description, String image, String categoryName) throws NotFoundException {
 
-        FakeStoreProductDto fakeStoreProduct = restTemplate.getForObject(
+        FakeStoreProductDto currentProduct = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/" + id,
                 org.scaler.productservice.dtos.FakeStoreProductDto.class
         );
         //Handling exception
-        if(fakeStoreProduct == null){
-            throw new NotFoundException("Product with id:"+id+" not exist");
+        if (currentProduct == null) {
+            throw new NotFoundException("Product with id:" + id + " not exist");
         }
 
-        //if product exist with id(main logic)
-        FakeStoreProductDto fakeStoreProductDto = new FakeStoreProductDto();
-        fakeStoreProductDto.setTitle(title);
-        fakeStoreProductDto.setPrice(price);
-        fakeStoreProductDto.setDescription(description);
-        fakeStoreProductDto.setImage(image);
-        fakeStoreProductDto.setCategory(category);
+        if (title != null) {
+            currentProduct.setTitle(title);
+        }
+        if (price != null) {
+            currentProduct.setPrice(price);
+        }
+        if (description != null) {
+            currentProduct.setDescription(description);
+        }
+        if (image != null) {
+            currentProduct.setImage(image);
+        }
+        if (categoryName == null) {
+            currentProduct.setCategory(currentProduct.getCategory());
+        } else {
+            currentProduct.setCategory(categoryName);
+        }
+
+        //updating in cache as well
+        FakeStoreProductDto fakeStoreProductFromCache = redisTemplate.opsForValue().get(id);
+        if (fakeStoreProductFromCache != null) {
+            redisTemplate.opsForValue().set(id, currentProduct);
+        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<FakeStoreProductDto> requestEntity = new HttpEntity<>(fakeStoreProductDto, headers);
+        HttpEntity<FakeStoreProductDto> requestEntity = new HttpEntity<>(currentProduct, headers);
 
-        ResponseEntity<FakeStoreProductDto> response = restTemplate.exchange(
+        ResponseEntity<FakeStoreProductDto> responseEntity = restTemplate.exchange(
                 "https://fakestoreapi.com/products/{id}",
                 HttpMethod.PUT,
                 requestEntity,
@@ -140,7 +163,7 @@ public class FakeStoreProductService implements Productservice {
                 id
         );
 
-        return response.getBody().toProduct();
+        return responseEntity.getBody().toProduct();
     }
 
     @Override
@@ -152,8 +175,8 @@ public class FakeStoreProductService implements Productservice {
                 title);
 
         //Handling Exception
-        if(response == null){
-            throw new NotFoundException("There is no product in "+title+" category");
+        if (response == null) {
+            throw new NotFoundException("There is no product in " + title + " category");
         }
 
         //when response is not null(main logic)
