@@ -1,6 +1,7 @@
 package org.scaler.productservice.service.thirdParty;
 
 import org.scaler.productservice.dtos.FakeStoreProductDto;
+import org.scaler.productservice.exceptions.NotFoundException;
 import org.scaler.productservice.models.Product;
 import org.scaler.productservice.service.Productservice;
 import org.springframework.http.*;
@@ -19,20 +20,33 @@ public class FakeStoreProductService implements Productservice {
     }
 
     @Override
-    public Product getProductById(Long id) {
+    public Product getProductById(Long id) throws NotFoundException {
+        //Handling Exception
         FakeStoreProductDto fakeStoreProductDto = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/" + id,
                 org.scaler.productservice.dtos.FakeStoreProductDto.class
         );
+        if(fakeStoreProductDto == null) {
+            throw new NotFoundException("Product with id:"+id+" not exist");
+        }
+
+        //when product exist(main logic)
         return fakeStoreProductDto.toProduct();
+
     }
 
     @Override
-    public List<Product> getAllProduct() {
+    public List<Product> getAllProduct() throws NotFoundException {
+        //Handling Exception
         FakeStoreProductDto[] response = restTemplate.getForObject(
                 "https://fakestoreapi.com/products",
                 FakeStoreProductDto[].class
         );
+        if(response == null){
+            throw new NotFoundException("There is no product");
+        }
+
+        //when response is not null(main logic)
         List<Product> products = new ArrayList<>();
         for (FakeStoreProductDto fakeStoreProductDto : response) {
             products.add(fakeStoreProductDto.toProduct());
@@ -58,8 +72,17 @@ public class FakeStoreProductService implements Productservice {
     }
 
     @Override
-    public Product deleteProduct(Long id) {
+    public Product deleteProduct(Long id) throws NotFoundException {
+        //Handling exception
+        FakeStoreProductDto fakeStoreProductDto = restTemplate.getForObject(
+                "https://fakestoreapi.com/products/" + id,
+                org.scaler.productservice.dtos.FakeStoreProductDto.class
+        );
+        if(fakeStoreProductDto == null){
+            throw new NotFoundException("Product with id:"+id+" not exist");
+        }
 
+        //If response is not null(main logic)
         HttpHeaders headers = new HttpHeaders();
         HttpEntity<?> requestEntity = new HttpEntity<>(headers);
 
@@ -72,7 +95,17 @@ public class FakeStoreProductService implements Productservice {
 
 
     @Override
-    public Product updateProduct(Long id, String title, Double price, String description, String image, String category) {
+    public Product updateProduct(Long id, String title, Double price, String description, String image, String category) throws NotFoundException {
+        //Handling exception
+        FakeStoreProductDto fakeStoreProduct = restTemplate.getForObject(
+                "https://fakestoreapi.com/products/" + id,
+                org.scaler.productservice.dtos.FakeStoreProductDto.class
+        );
+        if(fakeStoreProduct == null){
+            throw new NotFoundException("Product with id:"+id+" not exist");
+        }
+
+        //if product exist with id(main logic)
         FakeStoreProductDto fakeStoreProductDto = new FakeStoreProductDto();
         fakeStoreProductDto.setTitle(title);
         fakeStoreProductDto.setPrice(price);
@@ -96,12 +129,17 @@ public class FakeStoreProductService implements Productservice {
     }
 
     @Override
-    public List<Product> getAllProductByCategory(String title) {
+    public List<Product> getAllProductByCategory(String title) throws NotFoundException {
+        //handling exception
         FakeStoreProductDto[] response = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/category/{title}",
                 FakeStoreProductDto[].class,
                 title);
+        if(response == null){
+            throw new NotFoundException("There is no product in "+title+" category");
+        }
 
+        //when response is not null(main logic)
         List<Product> products = new ArrayList<>();
         for (FakeStoreProductDto fakeStoreProductDto : response) {
             products.add(fakeStoreProductDto.toProduct());
