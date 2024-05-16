@@ -4,6 +4,7 @@ import org.scaler.productservice.dtos.FakeStoreProductDto;
 import org.scaler.productservice.exceptions.NotFoundException;
 import org.scaler.productservice.models.Product;
 import org.scaler.productservice.service.Productservice;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -14,39 +15,51 @@ import java.util.List;
 @Service("fakestoreProductService")
 public class FakeStoreProductService implements Productservice {
     private final RestTemplate restTemplate;
+    private final RedisTemplate<Long, FakeStoreProductDto> redisTemplate;
 
-    public FakeStoreProductService(RestTemplate restTemplate) {
+    public FakeStoreProductService(RestTemplate restTemplate,
+                                   RedisTemplate<Long, FakeStoreProductDto> redisTemplate) {
         this.restTemplate = restTemplate;
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
     public Product getProductById(Long id) throws NotFoundException {
-        //Handling Exception
+        //checking in cache memory
+        FakeStoreProductDto fakeStoreProductFromCache = redisTemplate.opsForValue().get(id);
+        //for cache hit
+        if(fakeStoreProductFromCache != null){
+            return fakeStoreProductFromCache.toProduct();
+        }
+
+        //for cache miss
         FakeStoreProductDto fakeStoreProductDto = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/" + id,
                 org.scaler.productservice.dtos.FakeStoreProductDto.class
         );
+        //Handling Exception
         if(fakeStoreProductDto == null) {
             throw new NotFoundException("Product with id:"+id+" not exist");
         }
 
-        //when product exist(main logic)
+        redisTemplate.opsForValue().set(id, fakeStoreProductDto);
+
         return fakeStoreProductDto.toProduct();
 
     }
 
     @Override
     public List<Product> getAllProduct() throws NotFoundException {
-        //Handling Exception
         FakeStoreProductDto[] response = restTemplate.getForObject(
                 "https://fakestoreapi.com/products",
                 FakeStoreProductDto[].class
         );
+        //Handling Exception
         if(response == null){
-            throw new NotFoundException("There is no product");
+            throw  new NotFoundException("Product Not Exist");
         }
 
-        //when response is not null(main logic)
+
         List<Product> products = new ArrayList<>();
         for (FakeStoreProductDto fakeStoreProductDto : response) {
             products.add(fakeStoreProductDto.toProduct());
@@ -73,11 +86,12 @@ public class FakeStoreProductService implements Productservice {
 
     @Override
     public Product deleteProduct(Long id) throws NotFoundException {
-        //Handling exception
+
         FakeStoreProductDto fakeStoreProductDto = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/" + id,
                 org.scaler.productservice.dtos.FakeStoreProductDto.class
         );
+        //Handling exception
         if(fakeStoreProductDto == null){
             throw new NotFoundException("Product with id:"+id+" not exist");
         }
@@ -96,11 +110,12 @@ public class FakeStoreProductService implements Productservice {
 
     @Override
     public Product updateProduct(Long id, String title, Double price, String description, String image, String category) throws NotFoundException {
-        //Handling exception
+
         FakeStoreProductDto fakeStoreProduct = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/" + id,
                 org.scaler.productservice.dtos.FakeStoreProductDto.class
         );
+        //Handling exception
         if(fakeStoreProduct == null){
             throw new NotFoundException("Product with id:"+id+" not exist");
         }
@@ -130,11 +145,13 @@ public class FakeStoreProductService implements Productservice {
 
     @Override
     public List<Product> getAllProductByCategory(String title) throws NotFoundException {
-        //handling exception
+
         FakeStoreProductDto[] response = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/category/{title}",
                 FakeStoreProductDto[].class,
                 title);
+
+        //Handling Exception
         if(response == null){
             throw new NotFoundException("There is no product in "+title+" category");
         }

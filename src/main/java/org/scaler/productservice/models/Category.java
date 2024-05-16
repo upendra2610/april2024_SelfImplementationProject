@@ -12,10 +12,12 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
-public class Category extends BaseModel{
+public class Category extends BaseModel {
     private String title;
 
-    @OneToMany(mappedBy = "category" , cascade = {CascadeType.REMOVE}) //here we need to tell this(mappedBy) otherwise orm creates mapping table
-    @JsonIgnore //when we hit the getSingleProductbyId then this will infinite call recursively to avoid this we need this annotation
+    @OneToMany(mappedBy = "category", cascade = {CascadeType.REMOVE})
+    //here we need to tell this(mappedBy) otherwise orm creates mapping table
+    @JsonIgnore
+    //when we hit the getSingleProductbyId then this will infinite call recursively to avoid this we need this annotation
     private List<Product> products;
 }

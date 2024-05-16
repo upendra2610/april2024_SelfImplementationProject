@@ -5,9 +5,11 @@ import lombok.Setter;
 import org.scaler.productservice.models.Category;
 import org.scaler.productservice.models.Product;
 
+import java.io.Serializable;
+
 @Getter
 @Setter
-public class FakeStoreProductDto {
+public class FakeStoreProductDto implements Serializable {
     private Long id;
     private String title;
     private Double price;
