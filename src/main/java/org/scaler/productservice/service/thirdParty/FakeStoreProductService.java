@@ -10,17 +10,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service("fakestoreProductService")
 public class FakeStoreProductService implements Productservice {
     private final RestTemplate restTemplate;
     private final RedisTemplate<Long, FakeStoreProductDto> redisTemplate;
+    private final RedisTemplate<String, List<FakeStoreProductDto>> categoryRedisTemplate;
 
     public FakeStoreProductService(RestTemplate restTemplate,
-                                   RedisTemplate<Long, FakeStoreProductDto> redisTemplate) {
+                                   RedisTemplate<Long, FakeStoreProductDto> redisTemplate,
+                                   RedisTemplate<String, List<FakeStoreProductDto>> categoryRedisTemplate) {
         this.restTemplate = restTemplate;
         this.redisTemplate = redisTemplate;
+        this.categoryRedisTemplate = categoryRedisTemplate;
     }
 
     @Override
@@ -169,13 +173,24 @@ public class FakeStoreProductService implements Productservice {
     @Override
     public List<Product> getAllProductByCategory(String title) throws NotFoundException {
 
+        //checking in cache
+        List<FakeStoreProductDto> fakeStoreProducts = categoryRedisTemplate.opsForValue().get(title);
+        //cache hit
+        if(fakeStoreProducts != null){
+            List<Product> products = new ArrayList<>();
+            for (FakeStoreProductDto fakeStoreProductDto : fakeStoreProducts) {
+                products.add(fakeStoreProductDto.toProduct());
+            }
+            return products;
+        }
+        //cache miss
         FakeStoreProductDto[] response = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/category/{title}",
                 FakeStoreProductDto[].class,
                 title);
 
         //Handling Exception
-        if (response == null) {
+        if (response == null || response.length == 0) {
             throw new NotFoundException("There is no product in " + title + " category");
         }
 
@@ -184,6 +199,9 @@ public class FakeStoreProductService implements Productservice {
         for (FakeStoreProductDto fakeStoreProductDto : response) {
             products.add(fakeStoreProductDto.toProduct());
         }
+        //for cache miss adding list of product into cache
+        categoryRedisTemplate.opsForValue().set(title, Arrays.stream(response).toList());
+
         return products;
     }
 
