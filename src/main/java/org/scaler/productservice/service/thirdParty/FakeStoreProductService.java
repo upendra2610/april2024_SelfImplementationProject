@@ -39,7 +39,7 @@ public class FakeStoreProductService implements Productservice {
         //for cache miss
         FakeStoreProductDto fakeStoreProductDto = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/" + id,
-                org.scaler.productservice.dtos.FakeStoreProductDto.class
+                FakeStoreProductDto.class
         );
         //Handling Exception
         if (fakeStoreProductDto == null) {
