@@ -174,6 +174,47 @@ class FakeStoreProductServiceTest {
                 FakeStoreProductDto[].class);
     }
 
+    @Test
+    public void testCreateProduct(){
+        String title = "Phone";
+        Double price = 35000.00;
+        String description = "Gaming Phone";
+        String image = "image of phone";
+        String category = "Phone";
+        FakeStoreProductDto fakeStoreProductDto = new FakeStoreProductDto();
+        fakeStoreProductDto.setDescription(description);
+        fakeStoreProductDto.setTitle(title);
+        fakeStoreProductDto.setImage(image);
+        fakeStoreProductDto.setPrice(price);
+        fakeStoreProductDto.setCategory(category);
+
+        FakeStoreProductDto responseDto = new FakeStoreProductDto();
+        responseDto.setId(1L);
+        responseDto.setDescription(description);
+        responseDto.setTitle(title);
+        responseDto.setImage(image);
+        responseDto.setPrice(price);
+        responseDto.setCategory(category);
+
+        when(restTemplate.postForObject(
+                "https://fakestoreapi.com/products",
+                fakeStoreProductDto,
+                FakeStoreProductDto.class)).thenReturn(responseDto);
+
+        Product responseTest = fakeStoreProductService.createProduct(title, price, description, image, category);
+
+        assertNotNull(responseTest);
+        assertEquals("Gaming Phone", responseTest.getDescription());
+        assertEquals("Phone", responseTest.getTitle());
+        assertEquals("image of phone", responseTest.getImage());
+        assertEquals(35000.00, responseTest.getPrice());
+        assertEquals("Phone", responseTest.getCategory().getTitle());
+        verify(restTemplate,times(1)).postForObject(
+                "https://fakestoreapi.com/products",
+                fakeStoreProductDto,
+                FakeStoreProductDto.class);
+    }
+
 
     @Test
     public void testDeleteProductWhenProductInCache() throws NotFoundException {
