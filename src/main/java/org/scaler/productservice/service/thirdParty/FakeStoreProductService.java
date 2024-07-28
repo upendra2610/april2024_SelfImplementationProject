@@ -94,7 +94,7 @@ public class FakeStoreProductService implements Productservice {
         //checking if product with id exist or not
         FakeStoreProductDto fakeStoreProductDto = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/" + id,
-                org.scaler.productservice.dtos.FakeStoreProductDto.class
+                FakeStoreProductDto.class
         );
         //Handling exception
         if (fakeStoreProductDto == null) {

@@ -1,15 +1,12 @@
 package org.scaler.productservice.controller;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.scaler.productservice.dtos.CreateProductRequestDto;
 import org.scaler.productservice.exceptions.NotFoundException;
 import org.scaler.productservice.models.Category;
 import org.scaler.productservice.models.Product;
 import org.scaler.productservice.service.Productservice;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.ResponseEntity;
 
 import java.util.ArrayList;
@@ -20,18 +17,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
 class ProductControllerTest {
 
-    @Autowired
-    private ProductController productController;
+    private final Productservice productservice = Mockito.mock(Productservice.class);
 
-    @MockBean
-    @Qualifier("fakestoreProductService")
-    private Productservice productservice;
+    private final ProductController productController = new ProductController(productservice);
 
     @Test
-    public void testGetproductByIdWhenFound() throws NotFoundException {
+    public void testGetProductByIdWhenFound() throws NotFoundException {
 //        Arrange
         Category c = new Category();
         c.setId(1L);
@@ -268,6 +261,7 @@ class ProductControllerTest {
 //        ARRANGE
         when(productservice.getAllProductByCategory("Phone")).thenThrow(NotFoundException.class);
 
+//        ACT & ASSERT
         assertThrows(NotFoundException.class, ()->productController.getAllProductByCategory("Phone"));
     }
 
