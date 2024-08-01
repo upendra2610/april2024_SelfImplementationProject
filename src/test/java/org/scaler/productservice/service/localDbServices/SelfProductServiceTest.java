@@ -309,11 +309,129 @@ class SelfProductServiceTest {
     }
 
     @Test
-    public void testGetAllProdutByCategoryWhenThrowsnotfoundException(){
+    public void testGetAllProductByCategoryWhenThrowsNotfoundException(){
         when(productRepository.findByCategoryTitle(anyString())).thenReturn(new ArrayList<>());
 
         assertThrows(NotFoundException.class,()->selfProductService.getAllProductByCategory(anyString()));
         verify(productRepository,times(1)).findByCategoryTitle(anyString());
     }
+
+
+
+
+    @Test
+    public void testUpdateExistingProductWithAllFields() throws NotFoundException {
+        Long id = 1L;
+        String title = "old title";
+        Double price = 100.00;
+        String description = "old description";
+        String image = "old image";
+        Category oldcategory = new Category();
+        oldcategory.setId(1L);
+        oldcategory.setTitle("old category");
+        Product existingProduct = new Product();
+        existingProduct.setId(id);
+        existingProduct.setTitle(title);
+        existingProduct.setDescription(description);
+        existingProduct.setImage(image);
+        existingProduct.setPrice(price);
+        existingProduct.setCategory(oldcategory);
+
+        Category newCategory = new Category();
+        newCategory.setTitle("New Category");
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
+        when(categoryRepository.findByTitle("New Category")).thenReturn(newCategory);
+        when(productRepository.save(any(Product.class))).thenReturn(existingProduct);
+
+        Product updatedProduct = selfProductService.updateProduct(id, "New Title", 200.0, "New Description", "New Image", "New Category");
+
+        assertEquals("New Title", updatedProduct.getTitle());
+        assertEquals(200.0, updatedProduct.getPrice());
+        assertEquals("New Description", updatedProduct.getDescription());
+        assertEquals("New Image", updatedProduct.getImage());
+        assertEquals("New Category", updatedProduct.getCategory().getTitle());
+        verify(productRepository,times(1)).findById(id);
+        verify(categoryRepository,times(1)).findByTitle("New Category");
+        verify(productRepository,times(1)).save(any(Product.class));
+    }
+
+    @Test
+    public void testUpdateExistingProductWithSomeNullFields() throws NotFoundException {
+        Long id = 1L;
+        String title = "old title";
+        Double price = 100.00;
+        String description = "Old Description";
+        String image = "old image";
+        Category oldcategory = new Category();
+        oldcategory.setId(1L);
+        oldcategory.setTitle("Old Category");
+
+        Product existingProduct = new Product();
+        existingProduct.setId(id);
+        existingProduct.setTitle(title);
+        existingProduct.setDescription(description);
+        existingProduct.setImage(image);
+        existingProduct.setPrice(price);
+        existingProduct.setCategory(oldcategory);
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
+        when(productRepository.save(any(Product.class))).thenReturn(existingProduct);
+
+        Product updatedProduct = selfProductService.updateProduct(id, "New Title", null, null, "New Image", null);
+        assertEquals("New Title", updatedProduct.getTitle());
+        assertEquals(100.0, updatedProduct.getPrice());
+        assertEquals("Old Description", updatedProduct.getDescription());
+        assertEquals("New Image", updatedProduct.getImage());
+        assertEquals("Old Category", updatedProduct.getCategory().getTitle());
+        verify(productRepository,times(1)).findById(id);
+        verify(categoryRepository,times(0)).findByTitle(null);
+        verify(productRepository,times(1)).save(any(Product.class));
+    }
+
+    @Test
+    public void testUpdateProductWithNewCategory() throws NotFoundException {
+        Long id = 1L;
+        String title = "old title";
+        Double price = 100.00;
+        String description = "Old Description";
+        String image = "old image";
+        Category oldcategory = new Category();
+        oldcategory.setId(1L);
+        oldcategory.setTitle("Old Category");
+
+        Product existingProduct = new Product();
+        existingProduct.setId(id);
+        existingProduct.setTitle(title);
+        existingProduct.setDescription(description);
+        existingProduct.setImage(image);
+        existingProduct.setPrice(price);
+        existingProduct.setCategory(oldcategory);
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
+        when(categoryRepository.findByTitle("New Category")).thenReturn(null);
+        when(productRepository.save(any(Product.class))).thenReturn(existingProduct);
+
+        Product updatedProduct = selfProductService.updateProduct(id, "New Title", 200.0, "New Description", "New Image", "New Category");
+
+        assertEquals("New Title", updatedProduct.getTitle());
+        assertEquals(200.0, updatedProduct.getPrice(), 0.01);
+        assertEquals("New Description", updatedProduct.getDescription());
+        assertEquals("New Image", updatedProduct.getImage());
+        assertEquals("New Category", updatedProduct.getCategory().getTitle());
+        verify(productRepository,times(1)).findById(id);
+        verify(categoryRepository,times(1)).findByTitle("New Category");
+        verify(productRepository,times(1)).save(any(Product.class));
+    }
+
+
+    @Test
+    public void testUpdateNonExistentProduct() {
+        when(productRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, ()->selfProductService.updateProduct(1L, "New Title", 200.0, "New Description", "New Image", "New Category"));
+        verify(productRepository,times(1)).findById(1L);
+    }
+
 
 }
