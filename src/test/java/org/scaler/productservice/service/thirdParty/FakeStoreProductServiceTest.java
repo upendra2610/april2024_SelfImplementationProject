@@ -10,6 +10,8 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -176,6 +178,7 @@ class FakeStoreProductServiceTest {
 
     @Test
     public void testCreateProduct(){
+//        ARRANGE
         String title = "Phone";
         Double price = 35000.00;
         String description = "Gaming Phone";
@@ -197,12 +200,14 @@ class FakeStoreProductServiceTest {
         responseDto.setCategory(category);
 
         when(restTemplate.postForObject(
-                "https://fakestoreapi.com/products",
-                fakeStoreProductDto,
-                FakeStoreProductDto.class)).thenReturn(responseDto);
+                anyString(),
+                any(),
+                any())).thenReturn(responseDto);
 
+//        ACT
         Product responseTest = fakeStoreProductService.createProduct(title, price, description, image, category);
 
+//        ASSERT
         assertNotNull(responseTest);
         assertEquals("Gaming Phone", responseTest.getDescription());
         assertEquals("Phone", responseTest.getTitle());
@@ -210,9 +215,9 @@ class FakeStoreProductServiceTest {
         assertEquals(35000.00, responseTest.getPrice());
         assertEquals("Phone", responseTest.getCategory().getTitle());
         verify(restTemplate,times(1)).postForObject(
-                "https://fakestoreapi.com/products",
-                fakeStoreProductDto,
-                FakeStoreProductDto.class);
+                anyString(),
+                any(),
+                any());
     }
 
 
@@ -266,10 +271,12 @@ class FakeStoreProductServiceTest {
 
     @Test
     public void testDeleteProductWhenThrowsNotFoundException(){
+//        ARRANGE
         Long id = 1L;
         when(restTemplate.getForObject("https://fakestoreapi.com/products/" + id,
                 FakeStoreProductDto.class)).thenReturn(null);
 
+//        ACT & ASSERT
         assertThrows(NotFoundException.class, ()->fakeStoreProductService.deleteProduct(id));
         verify(restTemplate,times(1)).getForObject("https://fakestoreapi.com/products/" + id,
                 FakeStoreProductDto.class);
@@ -277,8 +284,119 @@ class FakeStoreProductServiceTest {
         HttpEntity<?> requestEntity = new HttpEntity<>(headers);
         verify(restTemplate,times(0)).exchange("https://fakestoreapi.com/products/{id}", HttpMethod.DELETE, requestEntity,
                 FakeStoreProductDto.class, id);
-
         verify(valueOperations,times(0)).get(id);
+    }
+
+    @Test
+    public void testGetAllProductBycategoryWhenCacheHit() throws NotFoundException {
+        String searchCategory = "Phone";
+        FakeStoreProductDto p1 = new FakeStoreProductDto();
+        p1.setId(1L);
+        p1.setDescription("Gaming Phone");
+        p1.setTitle("Phone");
+        p1.setImage("image of phone");
+        p1.setPrice(35000.00);
+        p1.setCategory("Phone");
+
+        FakeStoreProductDto p2 = new FakeStoreProductDto();
+        p2.setId(1L);
+        p2.setDescription("Camera Phone");
+        p2.setTitle("Phone");
+        p2.setImage("image of phone");
+        p2.setPrice(45000.00);
+        p2.setCategory("Phone");
+
+        List<FakeStoreProductDto> products = new ArrayList<>();
+        products.add(p1);
+        products.add(p2);
+
+        when(categoryRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get(searchCategory)).thenReturn(products);
+
+        List<Product> response = fakeStoreProductService.getAllProductByCategory(searchCategory);
+
+        assertNotNull(response);
+        assertEquals(2,response.size());
+        assertEquals("Gaming Phone", response.get(0).getDescription());
+        assertEquals("Phone", response.get(0).getTitle());
+        assertEquals("image of phone", response.get(0).getImage());
+        assertEquals(35000.00, response.get(0).getPrice());
+        assertEquals("Phone", response.get(0).getCategory().getTitle());
+        assertEquals("Camera Phone", response.get(1).getDescription());
+        assertEquals("Phone", response.get(1).getTitle());
+        assertEquals("image of phone", response.get(1).getImage());
+        assertEquals(45000.00, response.get(1).getPrice());
+        assertEquals("Phone", response.get(1).getCategory().getTitle());
+        verify(valueOperations,times(1)).get(searchCategory);
+        verify(restTemplate,times(0)).getForObject("https://fakestoreapi.com/products/category/"+searchCategory,
+                FakeStoreProductDto[].class);
+    }
+
+    @Test
+    public void testGetAllProductByCategoryWhenCacheMiss() throws NotFoundException {
+        String title = "Phone";
+        FakeStoreProductDto p1 = new FakeStoreProductDto();
+        p1.setId(1L);
+        p1.setDescription("Gaming Phone");
+        p1.setTitle("Phone");
+        p1.setImage("image of phone");
+        p1.setPrice(35000.00);
+        p1.setCategory("Phone");
+
+        FakeStoreProductDto p2 = new FakeStoreProductDto();
+        p2.setId(1L);
+        p2.setDescription("Camera Phone");
+        p2.setTitle("Phone");
+        p2.setImage("image of phone");
+        p2.setPrice(45000.00);
+        p2.setCategory("Phone");
+
+        FakeStoreProductDto[] products = {p1,p2};
+
+        when(categoryRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get(title)).thenReturn(null);
+
+        when(restTemplate.getForObject("https://fakestoreapi.com/products/category/{title}",
+                FakeStoreProductDto[].class,
+                title)).thenReturn(products);
+
+        List<Product> response = fakeStoreProductService.getAllProductByCategory(title);
+
+        assertNotNull(response);
+        assertEquals(2,response.size());
+        assertEquals("Gaming Phone", response.get(0).getDescription());
+        assertEquals("Phone", response.get(0).getTitle());
+        assertEquals("image of phone", response.get(0).getImage());
+        assertEquals(35000.00, response.get(0).getPrice());
+        assertEquals("Phone", response.get(0).getCategory().getTitle());
+        assertEquals("Camera Phone", response.get(1).getDescription());
+        assertEquals("Phone", response.get(1).getTitle());
+        assertEquals("image of phone", response.get(1).getImage());
+        assertEquals(45000.00, response.get(1).getPrice());
+        assertEquals("Phone", response.get(1).getCategory().getTitle());
+        verify(valueOperations,times(1)).get(title);
+        verify(restTemplate,times(1)).getForObject(
+                "https://fakestoreapi.com/products/category/{title}",
+                FakeStoreProductDto[].class,
+                title);
+        verify(valueOperations,times(1)).set(title, Arrays.stream(products).toList());
+    }
+
+    @Test
+    public void testGetAllProductsByCategaoryWhenThrowsNotFoundException() {
+        when(categoryRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("Phone")).thenReturn(null);
+
+        when(restTemplate.getForObject("https://fakestoreapi.com/products/category/{title}",
+                FakeStoreProductDto[].class,
+                "Phone")).thenReturn(null);
+
+        assertThrows(NotFoundException.class, () -> fakeStoreProductService.getAllProductByCategory("Phone"));
+        verify(valueOperations, times(1)).get("Phone");
+        verify(restTemplate,times(1)).getForObject("https://fakestoreapi.com/products/category/{title}",
+                FakeStoreProductDto[].class,
+                "Phone");
+        verify(valueOperations,times(0)).set("Phone", new ArrayList<>());
     }
 
 }

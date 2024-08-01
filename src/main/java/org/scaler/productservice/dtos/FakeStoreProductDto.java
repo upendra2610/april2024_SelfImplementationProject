@@ -9,6 +9,7 @@ import java.io.Serializable;
 
 @Getter
 @Setter
+
 public class FakeStoreProductDto implements Serializable {
     private Long id;
     private String title;
@@ -34,3 +35,7 @@ public class FakeStoreProductDto implements Serializable {
 
     }
 }
+//when we save inside redis then this call happen in network and redis not understand objects -
+//   so it serialize(converting into set of bytes) and send data over network and when we get -
+//   data from redis then it deserialize into object and for this we need to implement Serializable -
+//   interface to allow for serializing in particular class.
