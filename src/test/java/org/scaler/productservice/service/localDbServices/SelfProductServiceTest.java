@@ -310,8 +310,10 @@ class SelfProductServiceTest {
 
     @Test
     public void testGetAllProductByCategoryWhenThrowsNotfoundException(){
+//        ARRANGE
         when(productRepository.findByCategoryTitle(anyString())).thenReturn(new ArrayList<>());
 
+//        ACT & ASSERT
         assertThrows(NotFoundException.class,()->selfProductService.getAllProductByCategory(anyString()));
         verify(productRepository,times(1)).findByCategoryTitle(anyString());
     }
@@ -321,6 +323,7 @@ class SelfProductServiceTest {
 
     @Test
     public void testUpdateExistingProductWithAllFields() throws NotFoundException {
+//        ARRANGE
         Long id = 1L;
         String title = "old title";
         Double price = 100.00;
@@ -344,8 +347,10 @@ class SelfProductServiceTest {
         when(categoryRepository.findByTitle("New Category")).thenReturn(newCategory);
         when(productRepository.save(any(Product.class))).thenReturn(existingProduct);
 
+//        ACT
         Product updatedProduct = selfProductService.updateProduct(id, "New Title", 200.0, "New Description", "New Image", "New Category");
 
+//        ASSERT
         assertEquals("New Title", updatedProduct.getTitle());
         assertEquals(200.0, updatedProduct.getPrice());
         assertEquals("New Description", updatedProduct.getDescription());
@@ -358,6 +363,7 @@ class SelfProductServiceTest {
 
     @Test
     public void testUpdateExistingProductWithSomeNullFields() throws NotFoundException {
+//        ARRANGE
         Long id = 1L;
         String title = "old title";
         Double price = 100.00;
@@ -378,7 +384,10 @@ class SelfProductServiceTest {
         when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
         when(productRepository.save(any(Product.class))).thenReturn(existingProduct);
 
+//        ACT
         Product updatedProduct = selfProductService.updateProduct(id, "New Title", null, null, "New Image", null);
+
+//        ASSERT
         assertEquals("New Title", updatedProduct.getTitle());
         assertEquals(100.0, updatedProduct.getPrice());
         assertEquals("Old Description", updatedProduct.getDescription());
@@ -391,6 +400,7 @@ class SelfProductServiceTest {
 
     @Test
     public void testUpdateProductWithNewCategory() throws NotFoundException {
+//        ARRANGE
         Long id = 1L;
         String title = "old title";
         Double price = 100.00;
@@ -412,8 +422,10 @@ class SelfProductServiceTest {
         when(categoryRepository.findByTitle("New Category")).thenReturn(null);
         when(productRepository.save(any(Product.class))).thenReturn(existingProduct);
 
+//        ACT
         Product updatedProduct = selfProductService.updateProduct(id, "New Title", 200.0, "New Description", "New Image", "New Category");
 
+//        ASSERT
         assertEquals("New Title", updatedProduct.getTitle());
         assertEquals(200.0, updatedProduct.getPrice(), 0.01);
         assertEquals("New Description", updatedProduct.getDescription());
@@ -427,8 +439,10 @@ class SelfProductServiceTest {
 
     @Test
     public void testUpdateNonExistentProduct() {
+//        ARRANGE
         when(productRepository.findById(1L)).thenReturn(Optional.empty());
 
+//        ACT & ASSERT
         assertThrows(NotFoundException.class, ()->selfProductService.updateProduct(1L, "New Title", 200.0, "New Description", "New Image", "New Category"));
         verify(productRepository,times(1)).findById(1L);
     }
