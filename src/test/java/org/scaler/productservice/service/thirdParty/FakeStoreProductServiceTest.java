@@ -289,6 +289,7 @@ class FakeStoreProductServiceTest {
 
     @Test
     public void testGetAllProductBycategoryWhenCacheHit() throws NotFoundException {
+//        ARRANGE
         String searchCategory = "Phone";
         FakeStoreProductDto p1 = new FakeStoreProductDto();
         p1.setId(1L);
@@ -313,8 +314,10 @@ class FakeStoreProductServiceTest {
         when(categoryRedisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get(searchCategory)).thenReturn(products);
 
+//        ACT
         List<Product> response = fakeStoreProductService.getAllProductByCategory(searchCategory);
 
+//        ASSERT
         assertNotNull(response);
         assertEquals(2,response.size());
         assertEquals("Gaming Phone", response.get(0).getDescription());
@@ -334,6 +337,7 @@ class FakeStoreProductServiceTest {
 
     @Test
     public void testGetAllProductByCategoryWhenCacheMiss() throws NotFoundException {
+//        ARRANGE
         String title = "Phone";
         FakeStoreProductDto p1 = new FakeStoreProductDto();
         p1.setId(1L);
@@ -360,8 +364,10 @@ class FakeStoreProductServiceTest {
                 FakeStoreProductDto[].class,
                 title)).thenReturn(products);
 
+//        ACT
         List<Product> response = fakeStoreProductService.getAllProductByCategory(title);
 
+//        ASSEERT
         assertNotNull(response);
         assertEquals(2,response.size());
         assertEquals("Gaming Phone", response.get(0).getDescription());
@@ -384,6 +390,7 @@ class FakeStoreProductServiceTest {
 
     @Test
     public void testGetAllProductsByCategaoryWhenThrowsNotFoundException() {
+//        ARRANGE
         when(categoryRedisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get("Phone")).thenReturn(null);
 
@@ -391,6 +398,7 @@ class FakeStoreProductServiceTest {
                 FakeStoreProductDto[].class,
                 "Phone")).thenReturn(null);
 
+//        ACT & ASSEERT
         assertThrows(NotFoundException.class, () -> fakeStoreProductService.getAllProductByCategory("Phone"));
         verify(valueOperations, times(1)).get("Phone");
         verify(restTemplate,times(1)).getForObject("https://fakestoreapi.com/products/category/{title}",
@@ -398,5 +406,164 @@ class FakeStoreProductServiceTest {
                 "Phone");
         verify(valueOperations,times(0)).set("Phone", new ArrayList<>());
     }
+
+    @Test
+    public void testUpdateExistingProductWithAllFields() throws NotFoundException {
+//        ARRANGE
+        FakeStoreProductDto existingProduct = new FakeStoreProductDto();
+        existingProduct.setId(1L);
+        existingProduct.setTitle("Old Title");
+        existingProduct.setPrice(100.0);
+        existingProduct.setDescription("Old Description");
+        existingProduct.setImage("Old Image");
+        existingProduct.setCategory("Old Category");
+
+        FakeStoreProductDto updatedProduct = new FakeStoreProductDto();
+        updatedProduct.setId(1L);
+        updatedProduct.setTitle("New Title");
+        updatedProduct.setPrice(200.00);
+        updatedProduct.setDescription("New Description");
+        updatedProduct.setImage("New Image");
+        updatedProduct.setCategory("New Category");
+
+        when(restTemplate.getForObject("https://fakestoreapi.com/products/1", FakeStoreProductDto.class))
+                .thenReturn(existingProduct);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get(1L)).thenReturn(existingProduct);
+        when(restTemplate.exchange(eq("https://fakestoreapi.com/products/{id}"),
+                        eq(HttpMethod.PUT),
+                        any(HttpEntity.class),
+                        eq(FakeStoreProductDto.class),
+                        eq(1L)))
+                .thenReturn(new ResponseEntity<>(updatedProduct, HttpStatus.OK));
+
+//        ACT
+        Product result = fakeStoreProductService.updateProduct(1L, "New Title", 200.0, "New Description", "New Image", "New Category");
+
+//        ASSERT
+        assertEquals("New Title", result.getTitle());
+        assertEquals(200.0, result.getPrice());
+        assertEquals("New Description", result.getDescription());
+        assertEquals("New Image", result.getImage());
+        assertEquals("New Category", result.getCategory().getTitle());
+        verify(restTemplate,times(1)).getForObject("https://fakestoreapi.com/products/1", FakeStoreProductDto.class);
+        verify(redisTemplate,times(2)).opsForValue();
+        verify(valueOperations,times(1)).get(1L);
+        verify(restTemplate,times(1)).exchange(eq("https://fakestoreapi.com/products/{id}"),
+                eq(HttpMethod.PUT),
+                any(HttpEntity.class),
+                eq(FakeStoreProductDto.class),
+                eq(1L));
+        verify(valueOperations,times(1)).set(any(),any());
+    }
+
+    @Test
+    public void testUpdateExistingProductWithSomeNullFields() throws NotFoundException {
+//        ARRNGE
+        FakeStoreProductDto existingProduct = new FakeStoreProductDto();
+        existingProduct.setId(1L);
+        existingProduct.setTitle("Old Title");
+        existingProduct.setPrice(100.0);
+        existingProduct.setDescription("Old Description");
+        existingProduct.setImage("Old Image");
+        existingProduct.setCategory("Old Category");
+
+        FakeStoreProductDto updatedProduct = new FakeStoreProductDto();
+        updatedProduct.setId(1L);
+        updatedProduct.setTitle("New Title");
+        updatedProduct.setPrice(100.00);
+        updatedProduct.setDescription("Old Description");
+        updatedProduct.setImage("New Image");
+        updatedProduct.setCategory("Old Category");
+
+        when(restTemplate.getForObject("https://fakestoreapi.com/products/1", FakeStoreProductDto.class))
+                .thenReturn(existingProduct);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get(1L)).thenReturn(null);
+        when(restTemplate.exchange(eq("https://fakestoreapi.com/products/{id}"),
+                        eq(HttpMethod.PUT),
+                        any(HttpEntity.class),
+                        eq(FakeStoreProductDto.class),
+                        eq(1L)))
+                .thenReturn(new ResponseEntity<>(updatedProduct, HttpStatus.OK));
+
+//        ACT
+        Product result = fakeStoreProductService.updateProduct(1L, "New Title", null, null, "New Image", null);
+
+//        ASSERT
+        assertEquals("New Title", result.getTitle());
+        assertEquals(100.0, result.getPrice());
+        assertEquals("Old Description", result.getDescription());
+        assertEquals("New Image", result.getImage());
+        assertEquals("Old Category", result.getCategory().getTitle());
+        verify(valueOperations,times(1)).get(1L);
+        verify(valueOperations,times(0)).set(any(),any());
+        verify(restTemplate,times(1)).getForObject("https://fakestoreapi.com/products/1", FakeStoreProductDto.class);
+        verify(restTemplate,times(1)).exchange(eq("https://fakestoreapi.com/products/{id}"),
+                eq(HttpMethod.PUT),
+                any(HttpEntity.class),
+                eq(FakeStoreProductDto.class),
+                eq(1L));
+    }
+
+    @Test
+    public void testUpdateProductWhenCachedInRedis() throws NotFoundException {
+//        ARRANGE
+        FakeStoreProductDto existingProduct = new FakeStoreProductDto();
+        existingProduct.setId(1L);
+        existingProduct.setTitle("Old Title");
+        existingProduct.setPrice(100.0);
+        existingProduct.setDescription("Old Description");
+        existingProduct.setImage("Old Image");
+        existingProduct.setCategory("Old Category");
+
+        FakeStoreProductDto updatedProduct = new FakeStoreProductDto();
+        updatedProduct.setId(1L);
+        updatedProduct.setTitle("New Title");
+        updatedProduct.setPrice(200.00);
+        updatedProduct.setDescription("New Description");
+        updatedProduct.setImage("New Image");
+        updatedProduct.setCategory("New Category");
+
+        when(restTemplate.getForObject("https://fakestoreapi.com/products/1", FakeStoreProductDto.class))
+                .thenReturn(existingProduct);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get(1L)).thenReturn(existingProduct);
+//        doNothing().when(valueOperations).set(1L, updatedProduct);
+        when(restTemplate.exchange(eq("https://fakestoreapi.com/products/{id}"),
+                        eq(HttpMethod.PUT),
+                        any(HttpEntity.class),
+                        eq(FakeStoreProductDto.class),
+                        eq(1L)))
+                .thenReturn(new ResponseEntity<>(updatedProduct, HttpStatus.OK));
+
+//        ACT
+        Product result = fakeStoreProductService.updateProduct(1L, "New Title", 200.0, "New Description", "New Image", "New Category");
+
+//        ASSERT
+        assertEquals("New Title", result.getTitle());
+        assertEquals(200.0, result.getPrice(), 0.01);
+        assertEquals("New Description", result.getDescription());
+        assertEquals("New Image", result.getImage());
+        assertEquals("New Category", result.getCategory().getTitle());
+        verify(restTemplate,times(1)).getForObject("https://fakestoreapi.com/products/1", FakeStoreProductDto.class);
+        verify(valueOperations,times(1)).get(1L);
+        verify(valueOperations,times(1)).set(any(),any());
+    }
+
+
+    @Test
+    public void testUpdateNonExistentProduct(){
+//        ARRANGE
+        when(restTemplate.getForObject("https://fakestoreapi.com/products/1", FakeStoreProductDto.class))
+                .thenReturn(null);
+
+//        ACT & ASSERT
+        assertThrows(NotFoundException.class, ()->fakeStoreProductService.updateProduct(1L, "New Title", 200.0, "New Description", "New Image", "New Category"));
+        verify(restTemplate,times(1)).getForObject("https://fakestoreapi.com/products/1", FakeStoreProductDto.class);
+        verify(valueOperations,times(0)).get(any());
+        verify(valueOperations,times(0)).set(any(),any());
+    }
+
 
 }
