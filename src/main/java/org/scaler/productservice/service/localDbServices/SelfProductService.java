@@ -85,10 +85,6 @@ public class SelfProductService implements Productservice {
             if (image != null) {
                 currentProduct.setImage(image);
             }
-//            if (categoryName == null) {
-//                currentProduct.setCategory(currentProduct.getCategory());
-//            } else {
-
 
                 if(categoryName != null){
                 Category categoryFromDb = categoryRepository.findByTitle(categoryName);
